@@ -33,7 +33,9 @@ final class BookmarkTests: XCTestCase {
 
 		let bookmark = try XCTUnwrap(try Bookmark(targetFileURL: linkedFile.fileURL))
 
-		XCTAssertEqual(linkedFile.fileURL.standardizedFileURL, try bookmark.targetURL().standardizedFileURL)
+		let targetResult = try bookmark.targetURL()
+		XCTAssertEqual(targetResult.state, .valid)
+		XCTAssertEqual(linkedFile.fileURL.standardizedFileURL, targetResult.url.standardizedFileURL)
 
 		// Create a bookmark file
 		let bookmarkFile = try XCTTemporaryFile("bookmark", contents: bookmark.bookmarkData)
@@ -42,7 +44,9 @@ final class BookmarkTests: XCTestCase {
 		// Load the bookmark from the bookmark file
 		let bookmarkData = try XCTUnwrap(Data(contentsOf: bookmarkFile.fileURL))
 		let wBookmark = try XCTUnwrap(Bookmark(bookmarkData: bookmarkData))
-		XCTAssertEqual(linkedFile.fileURL.standardizedFileURL, try wBookmark.targetURL().standardizedFileURL)
+		let wTargetResult = try wBookmark.targetURL()
+		XCTAssertEqual(wTargetResult.state, .valid)
+		XCTAssertEqual(linkedFile.fileURL.standardizedFileURL, wTargetResult.url.standardizedFileURL)
 	}
 
 	func testRenameFunctionality() throws {
@@ -51,29 +55,35 @@ final class BookmarkTests: XCTestCase {
 		let originalFile = try XCTTemporaryFile("book.txt", contents: originalData)
 		let originalURL = originalFile.fileURL.standardizedFileURL
 		let originalBookmark = try XCTUnwrap(try Bookmark(targetFileURL: originalURL))
-		XCTAssertEqual(originalURL, try originalBookmark.targetURL().standardizedFileURL)
+
+		let targetResult = try originalBookmark.targetURL()
+		XCTAssertEqual(targetResult.state, .valid)
+		XCTAssertEqual(originalURL, targetResult.url.standardizedFileURL)
 
 		// Move the file to a new name
 		var movedURL = originalURL
 		movedURL = movedURL.deletingLastPathComponent().appendingPathComponent("renamed-book.txt")
 		try FileManager.default.moveItem(at: originalURL, to: movedURL)
 
-		// The bookmark should automatically point to the new location
-		let bookmarkForMovedURL = try originalBookmark.targetURL().standardizedFileURL
+		// The bookmark should automatically point to the new location, but the bookmark will be marked as stale
+		let targetResult2 = try originalBookmark.targetURL()
+		XCTAssertEqual(targetResult2.state, .stale)
+		let bookmarkForMovedURL = targetResult2.url.standardizedFileURL
 		XCTAssertEqual(bookmarkForMovedURL, movedURL)
 
 		// Check that the data at the bookmark url matches the original data
-		try originalBookmark.usingTargetURL { url in
+		let state = try originalBookmark.usingTargetURL { url in
 			let standardized = url.standardizedFileURL
 			let movedData = try? Data(contentsOf: standardized)
 			XCTAssertEqual(originalData, movedData)
 		}
+		XCTAssertEqual(state.bookmarkState, .stale)
 
 		// Delete the moved file
 		try FileManager.default.removeItem(at: movedURL)
 
 		// The bookmark should now be invalid
-		XCTAssertFalse(originalBookmark.isValidTarget)
+		XCTAssertEqual(originalBookmark.state, .invalid)
 		XCTAssertThrowsError(try originalBookmark.targetURL())
 	}
 
@@ -82,7 +92,9 @@ final class BookmarkTests: XCTestCase {
 		let originalFile = try XCTTemporaryFile("book.txt", contents: originalData)
 		let originalURL = originalFile.fileURL.standardizedFileURL
 		let originalBookmark = try XCTUnwrap(try Bookmark(targetFileURL: originalURL))
-		XCTAssertEqual(originalURL, try originalBookmark.targetURL().standardizedFileURL)
+		let originalResult = try originalBookmark.targetURL()
+		XCTAssertEqual(originalResult.state, .valid)
+		XCTAssertEqual(originalURL, originalResult.url.standardizedFileURL)
 
 		// Check that the string uti for the 'target' url
 		XCTAssertEqual("public.plain-text", try originalBookmark.utiStringForTargetURL())
@@ -105,11 +117,14 @@ final class BookmarkTests: XCTestCase {
 			let originalFile = try XCTTemporaryFile("book.txt", contents: originalData)
 			let originalURL = originalFile.fileURL.standardizedFileURL
 			let originalBookmark = try XCTUnwrap(try Bookmark(targetFileURL: originalURL))
-			XCTAssertEqual(originalURL, try originalBookmark.targetURL().standardizedFileURL)
+			let originalResult = try originalBookmark.targetURL()
+			XCTAssertEqual(originalResult.state, .valid)
+			XCTAssertEqual(originalURL, originalResult.url.standardizedFileURL)
 
-			try originalBookmark.usingTargetURL() { url in
+			let state = try originalBookmark.usingTargetURL() { url in
 				XCTAssertEqual(originalURL, url.standardizedFileURL)
 			}
+			XCTAssertEqual(state.bookmarkState, .valid)
 		}
 
 		#if os(macOS)
@@ -118,11 +133,13 @@ final class BookmarkTests: XCTestCase {
 			let originalFile = try XCTTemporaryFile("book.txt", contents: originalData)
 			let originalURL = originalFile.fileURL.standardizedFileURL
 			let originalBookmark = try XCTUnwrap(try Bookmark(targetFileURL: originalURL, options: .withSecurityScope))
-			XCTAssertEqual(originalURL, try originalBookmark.targetURL().standardizedFileURL)
+			let originalResult = try originalBookmark.targetURL()
+			XCTAssertEqual(originalURL, originalResult.url.standardizedFileURL)
 
-			try originalBookmark.usingTargetURL(options: .withSecurityScope) { url in
+			let state = try originalBookmark.usingTargetURL(options: .withSecurityScope) { url in
 				XCTAssertEqual(originalURL, url.standardizedFileURL)
 			}
+			XCTAssertEqual(state.bookmarkState, .valid)
 		}
 		#endif
 	}

@@ -33,7 +33,7 @@ Some information links :-
 
 ```swift
 // The original file url
-let originalURL = URL(fileUrlWithPath: ...)!
+let originalURL = URL(targetFileURL: ...)!
 
 // Create a bookmark
 let bookmark = try Bookmark(targetFileURL: originalURL)
@@ -51,18 +51,29 @@ try bookmark.usingTargetURL { targetURL in
    // Do something with the targetURL (which will correctly point to the new URL location)
 }
 ```
-
-### Load a bookmark from bookmark data
+### Save/Load bookmark data
 
 ```swift
-// Load the bookmark from stored bookmark data
-let someData = /* load bookmark data from somewhere */
-let bookmark = try Bookmark(bookmarkData: someData)
+// The original file url
+let originalURL = URL(targetFileURL: ...)!
 
-try bookmark.usingTargetURL { targetURL in
-   // Do something with the targetURL (which is the original target file)
+// Create a bookmark
+let bookmark = try Bookmark(targetFileURL: originalURL)
+
+// Grab out the raw bookmark data
+let storableData = bookmark.bookmarkData
+
+// ...Save the bookmark data for later use, eg. in CoreData or in a database...
+
+// Load the bookmark data back out from the storage medium...
+let savedBookmarkData = <load bookmark data from somewhere>
+// ... and recreate the Bookmark object from the data
+let existingBookmark = try Bookmark(bookmarkData: savedBookmarkData)
+
+// Use the loaded bookmark
+try existingBookmark.usingTargetURL { targetURL in
+   // ...Do something with the targetURL...
 }
-
 ```
 
 ## License
