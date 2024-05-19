@@ -10,7 +10,7 @@ A Swift wrapper for URL bookmarks which allow a file to be located regardless of
     </a>
 </p>
 <p align="center">
-    <img src="https://img.shields.io/badge/macOS-10.12+-red" />
+    <img src="https://img.shields.io/badge/macOS-10.13+-red" />
     <img src="https://img.shields.io/badge/iOS-14+-blue" />
     <img src="https://img.shields.io/badge/tvOS-14+-orange" />
 </p>
@@ -38,20 +38,29 @@ let originalURL = URL(targetFileURL: ...)!
 // Create a bookmark
 let bookmark = try Bookmark(targetFileURL: originalURL)
 
+// Extension on URL to generate a bookmark
+let bookmark2 = try originalURL.bookmark()
+
 // Access to the raw bookmark data
 let bookmarkData = bookmark.bookmarkData
 
-try bookmark.usingTargetURL { targetURL in
-   // Do something with the targetURL which is the original URL
+// Resolve the bookmark and retrieve its state and target url
+let resolved = try bookmark.resolved()
+
+try bookmark.resolving { resolvedItem in
+   // Do something with the resolvedItem which is the original URL and its state
 }
 
 // ... Somewhere in here, the original url file is moved or renamed ...
 
-try bookmark.usingTargetURL { targetURL in
-   // Do something with the targetURL (which will correctly point to the new URL location)
+try bookmark.resolving { resolvedItem in
+   // Do something with the resolvedItem (which will correctly point to the new URL location)
 }
 ```
+
 ### Save/Load bookmark data
+
+`Bookmark` fully supports the `Codable` protocol.
 
 ```swift
 // The original file url
@@ -71,19 +80,17 @@ let savedBookmarkData = <load bookmark data from somewhere>
 let existingBookmark = try Bookmark(bookmarkData: savedBookmarkData)
 
 // Use the loaded bookmark
-try existingBookmark.usingTargetURL { targetURL in
-   // ...Do something with the targetURL...
+try existingBookmark.resolving { resolved in
+   // ...Do something with the resolved bookmark URL
 }
 ```
 
 ## License
 
-MIT. Use it for anything you want, just attribute my work if you do. Let me know if you do use it somewhere, I'd love to hear about it!
-
 ```
 MIT License
 
-Copyright (c) 2022 Darren Ford
+Copyright (c) 2024 Darren Ford
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
