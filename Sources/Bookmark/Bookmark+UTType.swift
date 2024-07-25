@@ -35,7 +35,7 @@ public extension Bookmark {
 	}
 
 	/// Returns the UTI for the bookmark's target
-	@available(macOS 11.0, iOS 14.0, tvOS 14.0, *)
+	@available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
 	func resolvedUTI() throws -> UTType {
 		let utiString = try self.resolvedUTIString()
 		guard let t = UTType(utiString) else {
