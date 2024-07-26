@@ -33,7 +33,6 @@ import Foundation
 /// [Enabling Security-Scoped Bookmark and URL Access](https://developer.apple.com/documentation/professional_video_applications/fcpxml_reference/asset/media-rep/bookmark/enabling_security-scoped_bookmark_and_url_access)
 ///
 /// [Bookmarks and Security Scope](https://developer.apple.com/documentation/foundation/nsurl#1663783)
-@available(macOS 10.12, iOS 14, tvOS 14, *)
 public class Bookmark: Codable {
 	enum CodingKeys: CodingKey {
 		case bookmarkData
