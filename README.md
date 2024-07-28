@@ -10,9 +10,10 @@ A Swift wrapper for URL bookmarks which allow a file to be located regardless of
     </a>
 </p>
 <p align="center">
-    <img src="https://img.shields.io/badge/macOS-10.13+-red" />
-    <img src="https://img.shields.io/badge/iOS-14+-blue" />
-    <img src="https://img.shields.io/badge/tvOS-14+-orange" />
+    <img src="https://img.shields.io/badge/macOS-10.11+-red" />
+    <img src="https://img.shields.io/badge/iOS-11+-blue" />
+    <img src="https://img.shields.io/badge/tvOS-11+-orange" />
+    <img src="https://img.shields.io/badge/watchOS-4+-purple" />
 </p>
 
 This class wraps Swift's URL `bookmark` functionality. See [Apple's documentation](https://developer.apple.com/library/archive/documentation/FileManagement/Conceptual/FileSystemProgrammingGuide/AccessingFilesandDirectories/AccessingFilesandDirectories.html#//apple_ref/doc/uid/TP40010672-CH3-SW10) for further information.
