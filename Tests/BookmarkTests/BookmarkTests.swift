@@ -99,7 +99,9 @@ final class BookmarkTests: XCTestCase {
 		// Check that the string uti for the 'target' url
 		XCTAssertEqual("public.plain-text", try originalBookmark.resolvedUTIString())
 		// Check that the uti for the 'target' url
-		XCTAssertEqual(UTType.plainText, try originalBookmark.resolvedUTI())
+		if #available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *) {
+			XCTAssertEqual(UTType.plainText, try originalBookmark.resolvedUTI())
+		}
 
 		// Write an alias file to disk
 		let aliasFile = try XCTTemporaryFile("book.txt alias")
@@ -199,7 +201,11 @@ final class BookmarkTests: XCTestCase {
 		let bookmark = try url.bookmark()
 
 		// Verify the uttype for the target
-		XCTAssertEqual(.plainText, try bookmark.resolvedUTI())
+		XCTAssertEqual("public.plain-text", try bookmark.resolvedUTIString())
+
+		if #available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *) {
+			XCTAssertEqual(.plainText, try bookmark.resolvedUTI())
+		}
 
 		let t = Thing(text: "Booboo", bookmark: bookmark)
 
