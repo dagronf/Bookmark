@@ -20,7 +20,10 @@
 //
 
 import Foundation
+
+#if compiler(>=5.3)
 import UniformTypeIdentifiers
+#endif
 
 public extension Bookmark {
 	/// Returns the UTI for the bookmark's target
@@ -34,6 +37,7 @@ public extension Bookmark {
 		return typeString
 	}
 
+	#if compiler(>=5.3)
 	/// Returns the UTI for the bookmark's target
 	@available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
 	func resolvedUTI() throws -> UTType {
@@ -43,4 +47,5 @@ public extension Bookmark {
 		}
 		return t
 	}
+	#endif
 }

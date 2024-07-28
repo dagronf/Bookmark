@@ -64,6 +64,30 @@ public class Bookmark: Codable {
 		case invalid
 	}
 
+	/// [macOS only] The security scoping to apply to the bookmark.
+	///
+	/// A convenience for applying security options to a bookmark
+	public enum SecurityScopeOptions {
+		/// Apply no security scoping to the bookmark
+		case none
+		/// Create a security-scoped bookmark that, when resolved, provides a security-scoped URL allowing read-only
+		/// access to a file-system resource.
+		case securityScopingReadOnly
+		/// Specifies that you want to create a security-scoped bookmark that, when resolved, provides a security-scoped
+		/// URL allowing read/write access to a file-system resource.
+		case securityScopingReadWrite
+	}
+
+	/// The bookmark's security scoping
+	public enum SecurityScope {
+		/// Bookmark has no security scoping
+		case notSecurityScoped
+		/// Bookmark is security scoped
+		case securityScoped
+		/// Bookmark is invalid
+		case invalid
+	}
+
 	/// A snapshot of a bookmark's state and target url
 	public struct Resolved {
 		/// The state of the bookmark
@@ -87,41 +111,61 @@ public class Bookmark: Codable {
 	/// of the existing bookmark.
 	///
 	/// If the URL is no longer valid (eg the target file can no longer be found, returns .invalid)
-	public var state: State { (try? resolved().state) ?? .invalid }
+	public var state: State {
+		(try? self.resolved().state) ?? .invalid
+	}
 
 	/// Returns true if the bookmark was created with security scope (creation options contained `.withSecurityScope`)
-	/// and the target for the bookmark is still resolvable. Returns `nil` if the bookmark is no longer resolvable.
+	/// and the target for the bookmark is still resolvable.
 	///
-	/// Note: iOS bookmarks are ALWAYS security scoped.
-	public var isSecurityScoped: Bool? {
-		guard self.state == .invalid else {
-			return nil
+	/// Returns `.invalid` if the bookmark is no longer resolvable.
+	///
+	/// Note: iOS, tvOS, watchOS bookmarks are ALWAYS security scoped if they are valid.
+	public var isSecurityScoped: SecurityScope {
+		guard self.state != .invalid else {
+			return SecurityScope.invalid
 		}
 
 		#if os(macOS)
 		guard
-			let result = try? resolved(options: .withSecurityScope),
+			let result = try? self.resolved(options: .withSecurityScope),
 			result.state != .invalid
 		else {
-			return false
+			return SecurityScope.notSecurityScoped
 		}
 		#endif
-		return true
+		
+		return SecurityScope.securityScoped
 	}
 
 	/// Create a bookmark object from a target file url
 	/// - Parameters:
 	///   - targetFileURL: The target file url to bookmark
+	///   - security: The security scoping to apply to the bookmark access (ignored for non-macOS platforms)
 	///   - includingResourceValuesForKeys: Resource keys to store in the bookmark
 	///   - options: Bookmark creation options
 	public init(
 		targetFileURL: URL,
+		security: SecurityScopeOptions = .none,
 		includingResourceValuesForKeys keys: Set<URLResourceKey>? = nil,
 		options: URL.BookmarkCreationOptions = []
 	) throws {
 		guard targetFileURL.isFileURL else {
 			throw BookmarkError.invalidFileURL
 		}
+
+		#if os(macOS)
+		var options = options
+		switch security {
+		case .none:
+			break
+		case .securityScopingReadOnly:
+			options.insert(.withSecurityScope)
+			options.insert(.securityScopeAllowOnlyReadAccess)
+		case .securityScopingReadWrite:
+			options.insert(.withSecurityScope)
+		}
+		#endif
 
 		self.bookmarkData = try targetFileURL.bookmarkData(
 			options: options,
@@ -133,15 +177,18 @@ public class Bookmark: Codable {
 	/// Create a bookmark object from a target file path
 	/// - Parameters:
 	///   - targetFilePath: The target file path to bookmark
+	///   - security: The security scoping to apply to the bookmark access (ignored for non-macOS platforms)
 	///   - includingResourceValuesForKeys: Resource keys to store in the bookmark
 	///   - options: Bookmark creation options
 	@inlinable public convenience init(
 		targetFilePath: String,
+		security: SecurityScopeOptions = .none,
 		includingResourceValuesForKeys keys: Set<URLResourceKey>? = nil,
 		options: URL.BookmarkCreationOptions = []
 	) throws {
 		try self.init(
 			targetFileURL: URL(fileURLWithPath: targetFilePath),
+			security: security,
 			includingResourceValuesForKeys: keys,
 			options: options
 		)

@@ -23,14 +23,23 @@
 
 import Foundation
 
-@available(macOS 10.12, iOS 14, tvOS 14, *)
+extension URL {
+	/// Return a new bookmark object for this fileURL
+	/// - Parameters:
+	///   - options: Bookmark creation options
+	public func bookmark(options: URL.BookmarkCreationOptions = []) throws -> Bookmark {
+		try Bookmark(targetFileURL: self, options: options)
+	}
+}
+
+@available(macOS 10.12, iOS 14, tvOS 14, watchOS 7.0, *)
 extension URL {
 	/// Return a new bookmark object for this fileURL
 	/// - Parameters:
 	///   - includingResourceValuesForKeys: Resource keys to store in the bookmark
 	///   - options: Bookmark creation options
 	public func bookmark(
-		includingResourceValuesForKeys keys: Set<URLResourceKey>? = nil,
+		includingResourceValuesForKeys keys: Set<URLResourceKey>,
 		options: URL.BookmarkCreationOptions = []
 	) throws -> Bookmark {
 		try Bookmark(targetFileURL: self, includingResourceValuesForKeys: keys, options: options)

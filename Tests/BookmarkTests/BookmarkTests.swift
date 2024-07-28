@@ -1,7 +1,7 @@
 //
 //  BookmarkTests.swift
 //
-//  Copyright © 2022 Darren Ford. All rights reserved.
+//  Copyright © 2024 Darren Ford. All rights reserved.
 //
 //  MIT license
 //
@@ -22,7 +22,9 @@
 import XCTest
 @testable import Bookmark
 
+#if compiler(>=5.3)
 import UniformTypeIdentifiers
+#endif
 
 final class BookmarkTests: XCTestCase {
 
@@ -31,7 +33,7 @@ final class BookmarkTests: XCTestCase {
 		// Create a file to bookmark
 		let linkedFile = try XCTTemporaryFile("book.txt", contents: "This is a test".data(using: .utf8))
 
-		let bookmark = try XCTUnwrap(try Bookmark(targetFileURL: linkedFile.fileURL))
+		let bookmark = try Bookmark(targetFileURL: linkedFile.fileURL)
 
 		let targetResult = try bookmark.resolved()
 		XCTAssertEqual(targetResult.state, .valid)
@@ -42,8 +44,8 @@ final class BookmarkTests: XCTestCase {
 		XCTAssertTrue(FileManager.default.fileExists(atPath: bookmarkFile.fileURL.path))
 
 		// Load the bookmark from the bookmark file
-		let bookmarkData = try XCTUnwrap(Data(contentsOf: bookmarkFile.fileURL))
-		let wBookmark = try XCTUnwrap(Bookmark(bookmarkData: bookmarkData))
+		let bookmarkData = try Data(contentsOf: bookmarkFile.fileURL)
+		let wBookmark = try Bookmark(bookmarkData: bookmarkData)
 		let wTargetResult = try wBookmark.resolved()
 		XCTAssertEqual(wTargetResult.state, .valid)
 		XCTAssertEqual(linkedFile.fileURL.standardizedFileURL, wTargetResult.url.standardizedFileURL)
@@ -54,7 +56,7 @@ final class BookmarkTests: XCTestCase {
 		let originalData = "This is a test".data(using: .utf8)
 		let originalFile = try XCTTemporaryFile("book.txt", contents: originalData)
 		let originalURL = originalFile.fileURL.standardizedFileURL
-		let originalBookmark = try XCTUnwrap(try Bookmark(targetFileURL: originalURL))
+		let originalBookmark = try Bookmark(targetFileURL: originalURL)
 
 		let targetResult = try originalBookmark.resolved()
 		XCTAssertEqual(targetResult.state, .valid)
@@ -91,7 +93,7 @@ final class BookmarkTests: XCTestCase {
 		let originalData = "This is a test".data(using: .utf8)
 		let originalFile = try XCTTemporaryFile("book.txt", contents: originalData)
 		let originalURL = originalFile.fileURL.standardizedFileURL
-		let originalBookmark = try XCTUnwrap(try Bookmark(targetFileURL: originalURL))
+		let originalBookmark = try Bookmark(targetFileURL: originalURL)
 		let originalResult = try originalBookmark.resolved()
 		XCTAssertEqual(originalResult.state, .valid)
 		XCTAssertEqual(originalURL, originalResult.url.standardizedFileURL)
@@ -99,9 +101,11 @@ final class BookmarkTests: XCTestCase {
 		// Check that the string uti for the 'target' url
 		XCTAssertEqual("public.plain-text", try originalBookmark.resolvedUTIString())
 		// Check that the uti for the 'target' url
+		#if compiler(>=5.3)
 		if #available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *) {
 			XCTAssertEqual(UTType.plainText, try originalBookmark.resolvedUTI())
 		}
+		#endif
 
 		// Write an alias file to disk
 		let aliasFile = try XCTTemporaryFile("book.txt alias")
@@ -118,7 +122,13 @@ final class BookmarkTests: XCTestCase {
 			let originalData = "This is a test".data(using: .utf8)
 			let originalFile = try XCTTemporaryFile("book.txt", contents: originalData)
 			let originalURL = originalFile.fileURL.standardizedFileURL
-			let originalBookmark = try XCTUnwrap(try Bookmark(targetFileURL: originalURL))
+			let originalBookmark = try Bookmark(targetFileURL: originalURL)
+			#if os(macOS)
+			XCTAssertEqual(.notSecurityScoped, originalBookmark.isSecurityScoped)
+			#else
+			XCTAssertEqual(.securityScoped, originalBookmark.isSecurityScoped)
+			#endif
+
 			let originalResult = try originalBookmark.resolved()
 			XCTAssertEqual(originalResult.state, .valid)
 			XCTAssertEqual(originalURL, originalResult.url.standardizedFileURL)
@@ -134,7 +144,8 @@ final class BookmarkTests: XCTestCase {
 			let originalData = "This is a test".data(using: .utf8)
 			let originalFile = try XCTTemporaryFile("book.txt", contents: originalData)
 			let originalURL = originalFile.fileURL.standardizedFileURL
-			let originalBookmark = try XCTUnwrap(try Bookmark(targetFileURL: originalURL, options: .withSecurityScope))
+			let originalBookmark = try Bookmark(targetFileURL: originalURL, security: .securityScopingReadWrite)
+			XCTAssertEqual(.securityScoped, originalBookmark.isSecurityScoped)
 			let originalResult = try originalBookmark.resolved()
 			XCTAssertEqual(originalURL, originalResult.url.standardizedFileURL)
 
@@ -163,7 +174,7 @@ final class BookmarkTests: XCTestCase {
 		}
 	}
 
-	func file(name: String, containing text: String) throws -> XCTTemporaryFile {
+	func temporaryFile(name: String, containing text: String) throws -> XCTTemporaryFile {
 		let text = "This data is to be deleted"
 		let originalData = text.data(using: .utf8)
 		return try XCTTemporaryFile(name, contents: originalData)
@@ -171,7 +182,7 @@ final class BookmarkTests: XCTestCase {
 
 	func testDeleted() throws {
 		let text = "This data is to be deleted"
-		let file = try file(name: "book4.txt", containing: text)
+		let file = try temporaryFile(name: "book4.txt", containing: text)
 		let url = file.fileURL.standardizedFileURL
 		let bookmark = try url.bookmark()
 
@@ -196,16 +207,18 @@ final class BookmarkTests: XCTestCase {
 		}
 
 		let text = "This bookmark"
-		let file = try file(name: "book6.txt", containing: text)
+		let file = try temporaryFile(name: "book6.txt", containing: text)
 		let url = file.fileURL.standardizedFileURL
 		let bookmark = try url.bookmark()
 
 		// Verify the uttype for the target
 		XCTAssertEqual("public.plain-text", try bookmark.resolvedUTIString())
 
+		#if compiler(>=5.3)
 		if #available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *) {
 			XCTAssertEqual(.plainText, try bookmark.resolvedUTI())
 		}
+		#endif
 
 		let t = Thing(text: "Booboo", bookmark: bookmark)
 
